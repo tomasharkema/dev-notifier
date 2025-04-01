@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
+	"time"
 
 	kingpin "github.com/alecthomas/kingpin/v2"
 	"github.com/esiqveland/notify"
@@ -64,23 +66,38 @@ func runFollow(ctx context.Context) {
 	case <-ctx.Done():
 		fmt.Println("done")
 	}
-	fmt.Println("Channel closed")
 
+	fmt.Println("Channel closed")
 }
 
 func handleDevice(conn *dbus.Conn, device *udev.Device) {
 	action := device.Action()
 	devnode := device.Devnode()
+	properties := device.Properties()
+	devlinks := device.Devlinks()
 
-	name := device.Properties()["ID_MODEL_FROM_DATABASE"]
+	name := properties["ID_SERIAL"]
 
-	fmt.Println("=== New event: ===")
+	fmt.Println("\n=== New event: ===")
 	fmt.Println("Event:", action, device.Syspath())
 	fmt.Println(devnode)
 
+	devlinksString := strings.Builder{}
+	for k, _ := range devlinks {
+		fmt.Println(k)
+		fmt.Fprintf(&devlinksString, "%s\n", k)
+	}
+
+	// kvbuffer := strings.Builder{}
+	for k, v := range properties {
+		// fmt.Fprintf(&kvbuffer, " %s: %s;", k, v)
+		fmt.Println(k, v)
+	}
+	// fmt.Println(kvbuffer.String())
+
 	if action == "add" && devnode != "" && name != "" {
 
-		message := fmt.Sprintf("%s\n%s", name, devnode)
+		message := fmt.Sprintf("%s\n%s\n%s", name, devnode, devlinksString.String())
 
 		fmt.Println("Send message:", message)
 
@@ -97,7 +114,7 @@ func handleDevice(conn *dbus.Conn, device *udev.Device) {
 			// Hints: map[string]dbus.Variant{
 			//   soundHint.ID: soundHint.Variant,
 			// },
-			// ExpireTimeout: time.Second * 5,
+			ExpireTimeout: time.Minute,
 		}
 
 		notifier, err := notify.New(
