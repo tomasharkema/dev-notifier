@@ -74,7 +74,7 @@ func handleDevice(conn *dbus.Conn, device *udev.Device) {
 
 	name := device.Properties()["ID_MODEL_FROM_DATABASE"]
 
-	fmt.Println("\n\n=== New event: ===")
+	fmt.Println("=== New event: ===")
 	fmt.Println("Event:", action, device.Syspath())
 	fmt.Println(devnode)
 
